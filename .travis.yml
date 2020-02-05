@@ -1,0 +1,36 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t torlowski/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run torlowski/react-test npm test -- --coverage
+
+after_success:
+  - docker build -t torlowski/multi-client ./client
+  - docker build -t torlowski/multi-nginx ./nginx
+  - docker build -t torlowski/multi-server ./server
+  - docker build -t torlowski/multi-worker ./worker
+  # Log in to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push torlowski/multi-client
+  - docker push torlowski/multi-nginx
+  - docker push torlowski/multi-server
+  - docker push torlowski/multi-worker
+
+deploy:
+  edge: true
+  provider: elasticbeanstalk
+  region: us-east-2
+  app: multi-docker
+  env: MultiDocker-env
+  bucket_name: elasticbeanstalk-us-east-2-711261204879
+  bucket_path: multi-docker
+  on:
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key:
+    secure: $AWS_SECRET_KEY
