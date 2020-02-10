@@ -3,7 +3,10 @@ services:
   - docker
 
 before_install:
-  - docker build -t torlowski/react-test -f ./client/Dockerfile.dev ./client
+  - curl https://sdk.cloud.google.com | bash > /dev/null
+  - source $HOME/google-cloud-sdk/path.bash.inc
+  - gcloud components update kubectl
+  - gloud auth activate-service-account --key-file service-account.json
 
 script:
   - docker run torlowski/react-test npm test -- --coverage
